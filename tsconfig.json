@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": "./src",
     "target": "es5",
     "lib": [
       "dom",
@@ -18,9 +20,10 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "useUnknownInCatchVariables": false,
   },
   "include": [
-    "src"
+    "src",
   ]
 }
