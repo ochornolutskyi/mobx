@@ -12,7 +12,7 @@ interface UserItemProps {
 }
 
 // TODO: should add posts count if we added observer
-export const UserItem: FC<UserItemProps> = ({ data }) => {
+export const UserItem: FC<UserItemProps> = observer(({ data }) => {
 	console.log('user item ', data.id);
 
 	const [isOpen, handleOpen, handleClose] = useModal();
@@ -49,4 +49,4 @@ export const UserItem: FC<UserItemProps> = ({ data }) => {
 			</TableCell>
 		</TableRow>
 	);
-};
+});

@@ -18,7 +18,6 @@ export const TodosStore = observable({
 	async getAll(): Promise<void> {
 		try {
 			this.all.isLoading = true;
-			// this.list
 		} finally {
 			// this.all.isLoading = false;
 		}

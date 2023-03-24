@@ -1,22 +1,29 @@
 import axios, { AxiosResponse } from 'axios';
 import { USER_INITIAL_VALUES } from 'constants/user';
-import { action, autorun, computed, configure, makeObservable, observable, toJS } from 'mobx';
+import { action, autorun, computed, configure, flow, makeObservable, observable, runInAction, toJS } from 'mobx';
 import { IUserRequest, IUserResponse } from 'types';
 // strict mode
 configure({
 	enforceActions: 'always',
+	reactionScheduler: f => {
+		setTimeout(f);
+	},
 });
 
-class UsersService {
-	all: {
-		list: IUserResponse[];
-		isLoading: boolean;
-	};
+interface IUserStoreAll {
+	list: IUserResponse[];
+	isLoading: boolean;
+}
 
-	current: {
-		data: IUserResponse | IUserRequest;
-		isLoading: boolean;
-	};
+interface IUserStoreCurrent {
+	data: IUserRequest | IUserResponse;
+	isLoading: boolean;
+}
+
+class UsersService {
+	all: IUserStoreAll = { list: [], isLoading: false };
+
+	current: IUserStoreCurrent = { data: USER_INITIAL_VALUES, isLoading: false };
 
 	constructor() {
 		makeObservable(this, {
@@ -30,9 +37,6 @@ class UsersService {
 			updateUser: action,
 			deleteUser: action,
 		});
-
-		this.all = { list: [], isLoading: false };
-		this.current = { data: USER_INITIAL_VALUES, isLoading: false };
 	}
 
 	get usersCount(): number {
@@ -43,20 +47,24 @@ class UsersService {
 		this.current.data = data;
 	}
 
-	// *getAll(): Generator<Promise<AxiosResponse<IUser[]>>, void, AxiosResponse<IUser[]>> {
-	// 	this.isLoading = true;
-	// 	const response: AxiosResponse<IUser[]> = yield axios.get('https://jsonplaceholder.typicode.com/users');
-	// 	this.list = response.data;
-	// 	this.isLoading = false;
+	// *getAll() {
+	// 	this.all.isLoading = true;
+	// 	const response: AxiosResponse<IUserResponse[]> = yield axios.get('https://jsonplaceholder.typicode.com/users');
+	// 	this.all.list = response.data;
+	// 	this.all.isLoading = false;
 	// }
 
 	async getAllTest(): Promise<void> {
 		try {
 			this.all.isLoading = true;
 			const response: AxiosResponse<IUserResponse[]> = await axios.get('https://jsonplaceholder.typicode.com/users');
-			this.all.list = response.data;
+			runInAction(() => {
+				this.all.list = response.data;
+			});
 		} finally {
-			this.all.isLoading = false;
+			runInAction(() => {
+				this.all.isLoading = false;
+			});
 		}
 	}
 
@@ -67,10 +75,14 @@ class UsersService {
 				'https://jsonplaceholder.typicode.com/users',
 				reqBody
 			);
-			this.setCurrentUser({ ...USER_INITIAL_VALUES });
-			this.all.list.push({ ...response.data, id: response.data.id + this.all.list.length });
+			runInAction(() => {
+				this.setCurrentUser({ ...USER_INITIAL_VALUES });
+				this.all.list.push({ ...response.data, id: response.data.id + this.all.list.length });
+			});
 		} finally {
-			this.current.isLoading = false;
+			runInAction(() => {
+				this.current.isLoading = false;
+			});
 		}
 	}
 
@@ -81,10 +93,16 @@ class UsersService {
 				`https://jsonplaceholder.typicode.com/users/${reqBody.id}`,
 				reqBody
 			);
-			this.setCurrentUser({ ...USER_INITIAL_VALUES });
-			this.all.list = this.all.list.map((item: IUserResponse) => (response.data.id === item.id ? response.data : item));
+			runInAction(() => {
+				this.setCurrentUser({ ...USER_INITIAL_VALUES });
+				this.all.list = this.all.list.map((item: IUserResponse) =>
+					response.data.id === item.id ? response.data : item
+				);
+			});
 		} finally {
-			this.current.isLoading = false;
+			runInAction(() => {
+				this.current.isLoading = false;
+			});
 		}
 	}
 
@@ -92,7 +110,9 @@ class UsersService {
 		try {
 			this.all.isLoading = true;
 			await axios.delete(`https://jsonplaceholder.typicode.com/users/${id}`);
-			this.all.list = this.all.list.filter((item: IUserResponse) => id !== item.id);
+			runInAction(() => {
+				this.all.list = this.all.list.filter((item: IUserResponse) => id !== item.id);
+			});
 		} finally {
 			this.all.isLoading = false;
 		}

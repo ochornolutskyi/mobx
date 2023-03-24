@@ -1,11 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 import { POST_INITIAL_VALUES } from 'constants/post';
-import { autorun, configure, makeAutoObservable, toJS } from 'mobx';
+import { autorun, makeAutoObservable, toJS } from 'mobx';
 import { IPostRequest, IPostResponse } from 'types';
-// strict mode
-configure({
-	enforceActions: 'always',
-});
 
 class PostsService {
 	all: {
