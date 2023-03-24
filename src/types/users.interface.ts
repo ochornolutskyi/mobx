@@ -15,13 +15,17 @@ export interface IUserCompany {
 	bs: string;
 }
 
-export interface IUser {
+export interface IUserRequest {
 	id?: number;
 	name: string;
 	username: string;
 	email: string;
-	address?: IUserAddress;
 	phone: string;
 	website: string;
+}
+
+export interface IUserResponse extends Omit<IUserRequest, 'id'> {
+	id: number;
+	address?: IUserAddress;
 	company?: IUserCompany;
 }

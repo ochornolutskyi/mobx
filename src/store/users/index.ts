@@ -1,39 +1,46 @@
 import axios, { AxiosResponse } from 'axios';
 import { USER_INITIAL_VALUES } from 'constants/user';
-import { create } from 'domain';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { action, computed, configure, flow, makeObservable, observable, override, runInAction, toJS } from 'mobx';
-import { IUser } from 'types/users';
+import { action, autorun, computed, configure, makeObservable, observable, toJS } from 'mobx';
+import { IUserRequest, IUserResponse } from 'types';
 // strict mode
-configure({ enforceActions: 'always' });
+configure({
+	enforceActions: 'always',
+});
 
 class UsersService {
 	all: {
-		list: IUser[];
-
+		list: IUserResponse[];
 		isLoading: boolean;
 	};
 
-	create: {
-		data: IUser;
+	current: {
+		data: IUserResponse | IUserRequest;
 		isLoading: boolean;
 	};
 
 	constructor() {
 		makeObservable(this, {
 			all: observable,
-			create: observable,
+			current: observable,
 			usersCount: computed,
 			// getAll: flow,
 			getAllTest: action,
 			createUser: action,
+			setCurrentUser: action,
+			updateUser: action,
+			deleteUser: action,
 		});
+
 		this.all = { list: [], isLoading: false };
-		this.create = { data: { ...USER_INITIAL_VALUES }, isLoading: false };
+		this.current = { data: USER_INITIAL_VALUES, isLoading: false };
 	}
 
 	get usersCount(): number {
 		return this.all.list.length;
+	}
+
+	setCurrentUser(data: IUserResponse | IUserRequest): void {
+		this.current.data = data;
 	}
 
 	// *getAll(): Generator<Promise<AxiosResponse<IUser[]>>, void, AxiosResponse<IUser[]>> {
@@ -46,25 +53,58 @@ class UsersService {
 	async getAllTest(): Promise<void> {
 		try {
 			this.all.isLoading = true;
-			const response: AxiosResponse<IUser[]> = await axios.get('https://jsonplaceholder.typicode.com/users');
+			const response: AxiosResponse<IUserResponse[]> = await axios.get('https://jsonplaceholder.typicode.com/users');
 			this.all.list = response.data;
 		} finally {
 			this.all.isLoading = false;
-			console.log('file: index.ts:46  UsersService  getAll:', toJS(this));
 		}
 	}
 
-	async createUser(reqBody: IUser): Promise<void> {
+	async createUser(reqBody: IUserRequest): Promise<void> {
 		try {
-			this.create.isLoading = true;
-			const response: AxiosResponse<IUser> = await axios.post('https://jsonplaceholder.typicode.com/users', reqBody);
-			this.create.data = { ...USER_INITIAL_VALUES };
-			this.all.list.push(response.data);
+			this.current.isLoading = true;
+			const response: AxiosResponse<IUserResponse> = await axios.post(
+				'https://jsonplaceholder.typicode.com/users',
+				reqBody
+			);
+			this.setCurrentUser({ ...USER_INITIAL_VALUES });
+			this.all.list.push({ ...response.data, id: response.data.id + this.all.list.length });
 		} finally {
-			this.create.isLoading = false;
-			console.log('file: index.ts:63  UsersService  creareUser:', toJS(this));
+			this.current.isLoading = false;
+		}
+	}
+
+	async updateUser(reqBody: IUserRequest): Promise<void> {
+		try {
+			this.current.isLoading = true;
+			const response: AxiosResponse<IUserResponse> = await axios.patch(
+				`https://jsonplaceholder.typicode.com/users/${reqBody.id}`,
+				reqBody
+			);
+			this.setCurrentUser({ ...USER_INITIAL_VALUES });
+			this.all.list = this.all.list.map((item: IUserResponse) => (response.data.id === item.id ? response.data : item));
+		} finally {
+			this.current.isLoading = false;
+		}
+	}
+
+	async deleteUser(id: number): Promise<void> {
+		try {
+			this.all.isLoading = true;
+			await axios.delete(`https://jsonplaceholder.typicode.com/users/${id}`);
+			this.all.list = this.all.list.filter((item: IUserResponse) => id !== item.id);
+		} finally {
+			this.all.isLoading = false;
 		}
 	}
 }
 
 export const UsersStore = new UsersService();
+
+autorun(() => {
+	console.log('change current user: ', toJS(UsersStore.current));
+});
+
+autorun(() => {
+	console.log('change all user: ', toJS(UsersStore.all));
+});
