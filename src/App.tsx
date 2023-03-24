@@ -8,21 +8,13 @@ import { PostsStore } from 'store/posts';
 import { TodosStore } from 'store/todos';
 import { UsersStore } from 'store/users';
 
-const App: FC = () => {
-	injectStores({
-		PostsStore,
-		TodosStore,
-		UsersStore,
-	});
-
-	return (
-		<Router>
-			<Routes>
-				<Route index element={<UsersPage />} />
-				<Route path="/posts" element={<PostsPage />} />
-			</Routes>
-		</Router>
-	);
-};
+const App: FC = () => (
+	<Router>
+		<Routes>
+			<Route index element={<UsersPage />} />
+			<Route path="/posts" element={<PostsPage />} />
+		</Routes>
+	</Router>
+);
 
 export default App;
